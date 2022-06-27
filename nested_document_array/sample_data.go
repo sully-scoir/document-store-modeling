@@ -29,13 +29,13 @@ func rangeIn(low, hi int) int {
 	return low + rand.Intn(hi-low)
 }
 
-func GenerateNestedDocumentArray(ctx context.Context, count int) (result *mongo.InsertOneResult, err error) {
+func GenerateNestedDocumentArray(ctx context.Context, count int) (result *mongo.InsertOneResult, collection *mongo.Collection, err error) {
 	client, err := mongo.Connect(ctx, options.Client().ApplyURI("mongodb://localhost:27017"))
 	database := client.Database(DocumentStoreModelingDatabaseName)
-	collection := database.Collection(NestedDocumentArrayCollectionName)
+	collection = database.Collection(NestedDocumentArrayCollectionName)
 	err = collection.Drop(ctx)
 	if err != nil {
-		return result, err
+		return result, collection, err
 	}
 
 	sampleDocument := &SampleDocument{}
@@ -49,5 +49,5 @@ func GenerateNestedDocumentArray(ctx context.Context, count int) (result *mongo.
 	}
 
 	result, err = collection.InsertOne(ctx, sampleDocument)
-	return result, err
+	return result, collection, err
 }

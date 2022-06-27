@@ -17,7 +17,7 @@ func GenerateNestedDocsByCount(count int) {
 	It("When size is"+strconv.Itoa(count)+" nested documents", func() {
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()
-		_, err := GenerateNestedDocumentArray(ctx, count)
+		_, _, err := GenerateNestedDocumentArray(ctx, count)
 		Expect(err).To(BeNil())
 
 		client, err := mongo.Connect(ctx, options.Client().ApplyURI("mongodb://localhost:27017"))

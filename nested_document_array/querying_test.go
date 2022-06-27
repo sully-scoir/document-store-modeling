@@ -5,8 +5,6 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
 	"time"
 )
 
@@ -15,14 +13,8 @@ var _ = Describe("Nested Document Array", func() {
 		It("Client-side query given document Id", func() {
 			ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 			defer cancel()
-			result, err := GenerateNestedDocumentArray(ctx, 100)
+			result, collection, err := GenerateNestedDocumentArray(ctx, 100)
 			Expect(err).To(BeNil())
-
-			client, err := mongo.Connect(ctx, options.Client().ApplyURI("mongodb://localhost:27017"))
-			Expect(err).To(BeNil())
-			collection := client.
-				Database(DocumentStoreModelingDatabaseName).
-				Collection(NestedDocumentArrayCollectionName)
 
 			findOneResult := collection.FindOne(ctx, bson.M{"_id": result.InsertedID})
 			Expect(findOneResult.Err()).To(BeNil())
@@ -46,14 +38,8 @@ var _ = Describe("Nested Document Array", func() {
 		It("Client-side query matching array element", func() {
 			ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 			defer cancel()
-			_, err := GenerateNestedDocumentArray(ctx, 100)
+			_, collection, err := GenerateNestedDocumentArray(ctx, 100)
 			Expect(err).To(BeNil())
-
-			client, err := mongo.Connect(ctx, options.Client().ApplyURI("mongodb://localhost:27017"))
-			Expect(err).To(BeNil())
-			collection := client.
-				Database(DocumentStoreModelingDatabaseName).
-				Collection(NestedDocumentArrayCollectionName)
 
 			// First, look up the document that has a nested document array
 			// with an element that has Name matching sampleNameQuery
