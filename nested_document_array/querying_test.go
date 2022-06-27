@@ -13,7 +13,7 @@ var _ = Describe("Nested Document Array", func() {
 		It("Client-side query given document Id", func() {
 			ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 			defer cancel()
-			result, collection, err := GenerateNestedDocumentArray(ctx, 100)
+			result, collection, err := GenerateSampleNestedArrayDocument(ctx, 100)
 			Expect(err).To(BeNil())
 
 			findOneResult := collection.FindOne(ctx, bson.M{"_id": result.InsertedID})
@@ -38,7 +38,7 @@ var _ = Describe("Nested Document Array", func() {
 		It("Client-side query matching array element", func() {
 			ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 			defer cancel()
-			_, collection, err := GenerateNestedDocumentArray(ctx, 100)
+			_, collection, err := GenerateSampleNestedArrayDocument(ctx, 100)
 			Expect(err).To(BeNil())
 
 			// First, look up the document that has a nested document array
