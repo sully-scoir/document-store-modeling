@@ -29,7 +29,7 @@ func rangeIn(low, hi int) int {
 	return low + rand.Intn(hi-low)
 }
 
-func GenerateSampleNestedArrayDocument(ctx context.Context, nestedDocumentCount int) (result *mongo.InsertOneResult, collection *mongo.Collection, err error) {
+func GenerateSampleNestedArrayDocumentCollection(ctx context.Context, nestedDocumentCount int) (result *mongo.InsertOneResult, collection *mongo.Collection, err error) {
 	client, err := mongo.Connect(ctx, options.Client().ApplyURI("mongodb://localhost:27017"))
 	database := client.Database(DocumentStoreModelingDatabaseName)
 	collection = database.Collection(NestedDocumentArrayCollectionName)

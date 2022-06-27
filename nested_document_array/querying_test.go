@@ -5,6 +5,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
 	"time"
 )
 
@@ -13,7 +14,7 @@ var _ = Describe("Nested Document Array", func() {
 		It("Client-side query given document Id", func() {
 			ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 			defer cancel()
-			result, collection, err := GenerateSampleNestedArrayDocument(ctx, 100)
+			result, collection, err := GenerateSampleNestedArrayDocumentCollection(ctx, 100)
 			Expect(err).To(BeNil())
 
 			findOneResult := collection.FindOne(ctx, bson.M{"_id": result.InsertedID})
@@ -38,7 +39,7 @@ var _ = Describe("Nested Document Array", func() {
 		It("Client-side query matching array element", func() {
 			ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 			defer cancel()
-			_, collection, err := GenerateSampleNestedArrayDocument(ctx, 100)
+			_, collection, err := GenerateSampleNestedArrayDocumentCollection(ctx, 100)
 			Expect(err).To(BeNil())
 
 			// First, look up the document that has a nested document array
@@ -62,6 +63,44 @@ var _ = Describe("Nested Document Array", func() {
 
 			Expect(len(clientSideMatchResults)).To(Equal(1))
 			Expect(clientSideMatchResults[0].Name).To(Equal(sampleNameQuery))
+		})
+
+		It("Using aggregate to return matching nested array document", func() {
+			ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+			defer cancel()
+			result, collection, err := GenerateSampleNestedArrayDocumentCollection(ctx, 100)
+			Expect(err).To(BeNil())
+
+			sampleNameQuery := "Test Name 1"
+			sampleNameMatch := bson.D{
+				{"$match", bson.M{"NestedDocuments.Name": sampleNameQuery}},
+			}
+
+			aggregateCursor, err := collection.Aggregate(ctx, mongo.Pipeline{
+				// First match returns the parent document with the array of documents to query
+				bson.D{
+					{"$match", bson.M{"_id": result.InsertedID}},
+				},
+				// Unwind lifts all the array's documents out so that they can be queried
+				bson.D{
+					{"$unwind", "$NestedDocuments"},
+				},
+				// Now we query the lifted-out array nested documents
+				sampleNameMatch,
+				// We want our result to be the matching nested document itself
+				bson.D{
+					{"$replaceRoot", bson.M{"newRoot": "$NestedDocuments"}},
+				},
+			})
+			Expect(err).To(BeNil())
+
+			aggregateCursor.Next(ctx)
+			foundSampleNestedDocument := &SampleNestedDocument{}
+			err = aggregateCursor.Decode(foundSampleNestedDocument)
+			Expect(err).To(BeNil())
+			Expect(aggregateCursor.Next(ctx)).To(BeFalse(), "Cursor should only find one match")
+
+			Expect(foundSampleNestedDocument.Name).To(Equal(sampleNameQuery))
 		})
 	})
 })
