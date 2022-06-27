@@ -65,7 +65,7 @@ var _ = Describe("Nested Document Array", func() {
 			Expect(clientSideMatchResults[0].Name).To(Equal(sampleNameQuery))
 		})
 
-		It("Using aggregate to return matching nested array document", func() {
+		It("Aggregate returning single matching nested array document", func() {
 			ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 			defer cancel()
 			result, collection, err := GenerateSampleNestedArrayDocumentCollection(ctx, 100)
@@ -101,6 +101,54 @@ var _ = Describe("Nested Document Array", func() {
 			Expect(aggregateCursor.Next(ctx)).To(BeFalse(), "Cursor should only find one match")
 
 			Expect(foundSampleNestedDocument.Name).To(Equal(sampleNameQuery))
+		})
+
+		It("Aggregate returning multiple matching nested array documents", func() {
+			ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+			defer cancel()
+			result, collection, err := GenerateSampleNestedArrayDocumentCollection(ctx, 100)
+			Expect(err).To(BeNil())
+
+			sampleNameQuery := "Test Name 1"
+			sampleNameQuery2 := "Test Name 2"
+			sampleNameMatch := bson.D{
+				{"$match",
+					bson.M{"$or": []bson.M{
+						{"NestedDocuments.Name": sampleNameQuery},
+						{"NestedDocuments.Name": sampleNameQuery2},
+					}},
+				},
+			}
+
+			aggregateCursor, err := collection.Aggregate(ctx, mongo.Pipeline{
+				// First match returns the parent document with the array of documents to query
+				bson.D{
+					{"$match", bson.M{"_id": result.InsertedID}},
+				},
+				// Unwind lifts all the array's documents out so that they can be queried
+				bson.D{
+					{"$unwind", "$NestedDocuments"},
+				},
+				// Now we query the lifted-out array nested documents
+				sampleNameMatch,
+				// We want our result to be the matching nested document itself
+				bson.D{
+					{"$replaceRoot", bson.M{"newRoot": "$NestedDocuments"}},
+				},
+			})
+			Expect(err).To(BeNil())
+
+			foundSampleNestedDocuments := []*SampleNestedDocument{}
+			for aggregateCursor.Next(ctx) {
+				sampleNestedDocument := &SampleNestedDocument{}
+				err = aggregateCursor.Decode(sampleNestedDocument)
+				Expect(err).To(BeNil())
+				foundSampleNestedDocuments = append(foundSampleNestedDocuments, sampleNestedDocument)
+			}
+
+			Expect(len(foundSampleNestedDocuments)).To(Equal(2))
+			Expect(foundSampleNestedDocuments[0].Name).To(Equal(sampleNameQuery))
+			Expect(foundSampleNestedDocuments[1].Name).To(Equal(sampleNameQuery2))
 		})
 	})
 })
