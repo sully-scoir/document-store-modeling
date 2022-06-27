@@ -12,7 +12,7 @@ import (
 
 var _ = Describe("Nested Document Array", func() {
 	Context("Query by Name", func() {
-		It("Client-side query", func() {
+		It("Client-side query given document Id", func() {
 			ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 			defer cancel()
 			result, err := GenerateNestedDocumentArray(ctx, 100)
@@ -32,15 +32,50 @@ var _ = Describe("Nested Document Array", func() {
 			Expect(err).To(BeNil())
 
 			sampleNameQuery := "Test Name 1"
-			matchResults := []*SampleNestedDocument{}
+			clientSideFindResult := []*SampleNestedDocument{}
 			for _, nestedDocument := range foundSampleDocument.NestedDocuments {
 				if nestedDocument.Name == sampleNameQuery {
-					matchResults = append(matchResults, nestedDocument)
+					clientSideFindResult = append(clientSideFindResult, nestedDocument)
 				}
 			}
 
-			Expect(len(matchResults)).To(Equal(1))
-			Expect(matchResults[0].Name).To(Equal(sampleNameQuery))
+			Expect(len(clientSideFindResult)).To(Equal(1))
+			Expect(clientSideFindResult[0].Name).To(Equal(sampleNameQuery))
+		})
+
+		It("Client-side query matching array element", func() {
+			ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+			defer cancel()
+			_, err := GenerateNestedDocumentArray(ctx, 100)
+			Expect(err).To(BeNil())
+
+			client, err := mongo.Connect(ctx, options.Client().ApplyURI("mongodb://localhost:27017"))
+			Expect(err).To(BeNil())
+			collection := client.
+				Database(DocumentStoreModelingDatabaseName).
+				Collection(NestedDocumentArrayCollectionName)
+
+			// First, look up the document that has a nested document array
+			// with an element that has Name matching sampleNameQuery
+			sampleNameQuery := "Test Name 1"
+			findCursor, err := collection.Find(ctx, bson.M{"NestedDocuments.Name": sampleNameQuery})
+			defer findCursor.Close(ctx)
+			Expect(err).To(BeNil())
+
+			findCursor.Next(ctx)
+			foundSampleDocument := &SampleDocument{}
+			err = findCursor.Decode(foundSampleDocument)
+			Expect(err).To(BeNil())
+
+			clientSideMatchResults := []*SampleNestedDocument{}
+			for _, nestedDocument := range foundSampleDocument.NestedDocuments {
+				if nestedDocument.Name == sampleNameQuery {
+					clientSideMatchResults = append(clientSideMatchResults, nestedDocument)
+				}
+			}
+
+			Expect(len(clientSideMatchResults)).To(Equal(1))
+			Expect(clientSideMatchResults[0].Name).To(Equal(sampleNameQuery))
 		})
 	})
 })

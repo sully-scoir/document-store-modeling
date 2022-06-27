@@ -15,14 +15,14 @@ var (
 )
 
 type SampleNestedDocument struct {
-	Name    string
-	Phone   string
-	Address string
+	Name    string `bson:"Name"`
+	Phone   string `bson:"Phone"`
+	Address string `bson:"Address"`
 }
 
 type SampleDocument struct {
-	Id              primitive.ObjectID `bson:"_id"`
-	NestedDocuments []*SampleNestedDocument
+	Id              primitive.ObjectID      `bson:"_id"`
+	NestedDocuments []*SampleNestedDocument `bson:"NestedDocuments"`
 }
 
 func rangeIn(low, hi int) int {
