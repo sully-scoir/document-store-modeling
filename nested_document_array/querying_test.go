@@ -2,6 +2,7 @@ package nested_document_array
 
 import (
 	"context"
+	"fmt"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"go.mongodb.org/mongo-driver/bson"
@@ -10,6 +11,14 @@ import (
 )
 
 var _ = Describe("Nested Document Array", func() {
+	var startTime time.Time
+	BeforeEach(func() {
+		startTime = time.Now()
+	})
+	AfterEach(func() {
+		fmt.Println("Runtime:", time.Since(startTime))
+	})
+
 	Context("Query by Name", func() {
 		It("Client-side query given document Id", func() {
 			ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
