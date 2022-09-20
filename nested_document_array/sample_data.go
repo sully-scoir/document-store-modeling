@@ -31,6 +31,10 @@ func rangeIn(low, hi int) int {
 
 func GenerateSampleNestedArrayDocumentCollection(ctx context.Context, nestedDocumentCount int) (result *mongo.InsertOneResult, collection *mongo.Collection, err error) {
 	client, err := mongo.Connect(ctx, options.Client().ApplyURI("mongodb://localhost:27017"))
+	if err != nil {
+		panic("could not connect to mongo")
+	}
+
 	database := client.Database(DocumentStoreModelingDatabaseName)
 	collection = database.Collection(NestedDocumentArrayCollectionName)
 	err = collection.Drop(ctx)
